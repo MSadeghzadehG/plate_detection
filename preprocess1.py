@@ -74,7 +74,14 @@ for region in regionprops(label_image):
 
 plt.show()
 
+
+import pickle
+print("Loading model")
+filename = './finalized_model.sav'
+model = pickle.load(open(filename, 'rb'))
+
 for plate in plate_like_objects:
+    characters = []
     binary_plate = binarization(plate)
     license_plate = np.invert(binary_plate)
 
@@ -96,11 +103,36 @@ for plate in plate_like_objects:
 
         # show ROI
         # cv2.imwrite('roi_imgs.png', roi)
-        # cv2.imshow('charachter'+str(i), roi)
+        characters.append(cv2.resize(roi, (20, 20), interpolation=cv2.INTER_AREA))
+        # converts it to a 1D array
+        each_character = characters[-1].reshape(1, -1)
+        result = model.predict(each_character)
+        print(result[0])
+        # classification_result.append(result)
+        cv2.imshow('charachter'+str(i), characters[-1])
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
         cv2.rectangle(img, (x, y), (x + w, y + h), (90, 0, 255), 2)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
+
     print('found')
     cv2.imshow('marked areas', img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
+
+    
+
+    # print('Model loaded. Predicting characters of number plate')
+    # classification_result = []
+    # for each_character in characters:
+        
+
+    # print('Classification result')
+    # print(classification_result)
+
+    # plate_string = ''
+    # for eachPredict in classification_result:
+    #     plate_string += eachPredict[0]
+
+    # print('Predicted license plate')
+    # print(plate_string)
