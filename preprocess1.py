@@ -21,7 +21,7 @@ def binarization(input_image):
     return input_image > threshold_value
 
 
-car_image = imread("2454.jpg", as_grey=True)
+car_image = imread("2510.jpg", as_grey=True)
 gray_car_image = rotate_image(car_image * 255)
 binary_car_image = binarization(gray_car_image)
 print(car_image.shape)
@@ -84,6 +84,7 @@ for plate in plate_like_objects:
     characters = []
     binary_plate = binarization(plate)
     license_plate = np.invert(binary_plate)
+    # license_plate = binary_plate
 
     cv_image = img_as_ubyte(license_plate)
     img = cv_image
@@ -98,22 +99,19 @@ for plate in plate_like_objects:
         # Get bounding box
         x, y, w, h = cv2.boundingRect(ctr)
 
+        if w > 40 or h > 40 or h < 20:
+            continue
         # Getting ROI
-        roi = img[y-5:y+h+5, x-5:x+w+5]
+        roi = img[max(y-5, 0):y+h+5, max(0, x-5):x+w+5]
 
         # show ROI
-        # cv2.imwrite('roi_imgs.png', roi)
         characters.append(cv2.resize(roi, (28, 28), interpolation=cv2.INTER_AREA))
         # converts it to a 1D array
-        each_character = cv2.resize(roi, (20, 20), interpolation=cv2.INTER_AREA).reshape(1, -1)
-        result = model.predict(each_character)
-        print(result)
-        # classification_result.append(result)
         cv2.imshow('charachter'+str(i), characters[-1])
         cv2.waitKey(0)
         cv2.destroyAllWindows()
-        cv2.imwrite('charachter'+str(i)+'.png', characters[-1])
-        cv2.rectangle(img, (x, y), (x + w, y + h), (90, 0, 255), 2)
+        # cv2.imwrite('charachter'+str(i)+'.png', characters[-1])
+        cv2.rectangle(img, (x, y), (x + w, y + h), (90, 0, 255), 1)
 
     print('found')
     cv2.imshow('marked areas', img)
