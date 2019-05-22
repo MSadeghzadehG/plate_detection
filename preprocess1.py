@@ -10,7 +10,8 @@ from skimage.transform import resize
 import cv2
 from skimage import img_as_ubyte
 
-
+import os
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 def rotate_image(inital_image):
     return rotate(inital_image, -11, center=None)
@@ -21,7 +22,7 @@ def binarization(input_image):
     return input_image > threshold_value
 
 
-car_image = imread("2510.jpg", as_grey=True)
+car_image = imread("2670.jpg", as_grey=True)
 gray_car_image = rotate_image(car_image * 255)
 binary_car_image = binarization(gray_car_image)
 print(car_image.shape)
@@ -37,7 +38,7 @@ plt.show()
 
 # this gets all the connected regions and groups them together
 label_image = measure.label(binary_car_image)
-plate_dimensions = (35, 60, 160, 215)
+plate_dimensions = (35, 60, 140, 215)
 min_height, max_height, min_width, max_width = plate_dimensions
 plate_objects_cordinates = []
 plate_like_objects = []
@@ -102,16 +103,37 @@ for plate in plate_like_objects:
         if w > 40 or h > 40 or h < 20:
             continue
         # Getting ROI
-        roi = img[max(y-5, 0):y+h+5, max(0, x-5):x+w+5]
+        roi = img[max(y-5, 0):y+h+5, max(0, x-5):x+w+5].copy()
 
         # show ROI
         characters.append(cv2.resize(roi, (28, 28), interpolation=cv2.INTER_AREA))
-        # converts it to a 1D array
+        
+
+        # usning TFKpredict
+        # x = characters[-1].reshape(1, 784).astype('float32') / 255
+
+        # # perform the prediction
+        # from keras.models import load_model
+        # model = load_model('TFKeras.h5')
+        # out = model.predict(x)
+        # print(np.argmax(out))
+        
+
+        x = characters[-1].reshape(1,28,28,1)
+        x = x.astype('float32')
+        x /= 255
+
+        #perform the prediction
+        from keras.models import load_model
+        model = load_model('cnn.h5')
+        out = model.predict(x)
+        print(np.argmax(out))
+
         cv2.imshow('charachter'+str(i), characters[-1])
         cv2.waitKey(0)
         cv2.destroyAllWindows()
         # cv2.imwrite('charachter'+str(i)+'.png', characters[-1])
-        cv2.rectangle(img, (x, y), (x + w, y + h), (90, 0, 255), 1)
+        # cv2.rectangle(img, (x, y), (x + w, y + h), (90, 0, 255), 2)
 
     print('found')
     cv2.imshow('marked areas', img)
