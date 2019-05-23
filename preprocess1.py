@@ -1,4 +1,4 @@
-from skimage.io import imread
+from skimage.io import imread, imsave
 from skimage.filters import threshold_otsu
 import matplotlib.pyplot as plt
 from skimage.transform import rotate
@@ -7,11 +7,13 @@ from skimage.measure import regionprops
 import matplotlib.patches as patches
 import numpy as np
 from skimage.transform import resize
+from skimage.util.shape import view_as_windows
 import cv2
 from skimage import img_as_ubyte
 
 import os
-os.environ['KMP_DUPLICATE_LIB_OK']='True'
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+
 
 def rotate_image(inital_image):
     return rotate(inital_image, -11, center=None)
@@ -35,6 +37,8 @@ fig, (ax1, ax2) = plt.subplots(1, 2)
 ax1.imshow(binary_car_image, cmap="gray")
 ax2.imshow(gray_car_image, cmap="gray")
 plt.show()
+fig.savefig('plot1.png')
+
 
 # this gets all the connected regions and groups them together
 label_image = measure.label(binary_car_image)
@@ -50,7 +54,7 @@ ax1.imshow(gray_car_image, cmap="gray")
 # regionprops creates a list of properties of all the labelled regions
 for region in regionprops(label_image):
     if region.area < 50:
-        #if the region is so small then it's likely not a license plate
+        # if the region is so small then it's likely not a license plate
         continue
 
     # the bounding box coordinates
@@ -73,13 +77,11 @@ for region in regionprops(label_image):
         ax1.add_patch(rectBorder)
     # let's draw a red rectangle over those regions
 
+# imsave('test.png', ax1)
 plt.show()
+fig.savefig('plot2.png')
 
 
-# import pickle
-# print("Loading model")
-# filename = './finalized_model.sav'
-# model = pickle.load(open(filename, 'rb'))
 
 for plate in plate_like_objects:
     prediction = ''
@@ -90,7 +92,7 @@ for plate in plate_like_objects:
 
     cv_image = img_as_ubyte(license_plate)
     img = cv_image
-    img = cv2.cvtColor(img,cv2.COLOR_GRAY2RGB)
+    img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
 
     # find contours
     ctrs, hier = cv2.findContours(cv_image.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -104,28 +106,13 @@ for plate in plate_like_objects:
 
         if w > 40 or h > 40 or h < 20:
             continue
+
         # Getting ROI
-        roi = img[max(y-5, 0):y+h+5, max(0, x-5):x+w+5,0]
+        roi = img[max(y-5, 0):y+h+5, max(0, x-5):x+w+5, 0]
 
         # show ROI
         characters.append(cv2.resize(roi, (28, 28), interpolation=cv2.INTER_AREA))
-        
-        # usning TFKpredict
-        # x = characters[-1].reshape(1, 784).astype('float32') / 255
-        # from keras.models import load_model
-        # model = load_model('TFKeras.h5')
-        # out = model.predict(x)
-        # print(np.argmax(out))
-        
-        # using cnnPrecict
-        # x = characters[-1].reshape(1,28,28,1)
-        # x = x.astype('float32')
-        # x /= 255
-        # from keras.models import load_model
-        # model = load_model('cnn.h5')
-        # out = model.predict(x)
-        # print(np.argmax(out))
-        
+      
         # using my model
         char = characters[-1].reshape(1, 28, 28, 1)
         char = char.astype('float32')
@@ -134,31 +121,14 @@ for plate in plate_like_objects:
         model = load_model('my_model.h5')
         out = model.predict(char)
         print(out)
-        prediction += str(np.argmax(out))
-
-        cv2.rectangle(img, (x, y), (x+w, y+h), (0, 255, 0), 1)
-        cv2.imshow('charachter'+str(i), img)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        if out[0][int(np.argmax(out))] >= 0.7:
+            prediction += str(np.argmax(out))
+            cv2.rectangle(img, (x, y), (x+w, y+h), (0, 255, 0), 1)
+        
+        # show digit
+        # cv2.imshow('charachter'+str(i), img)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
 
     print('found')
     cv2.imwrite(prediction+'.png', img)
-
-
-
-    
-
-    # print('Model loaded. Predicting characters of number plate')
-    # classification_result = []
-    # for each_character in characters:
-        
-
-    # print('Classification result')
-    # print(classification_result)
-
-    # plate_string = ''
-    # for eachPredict in classification_result:
-    #     plate_string += eachPredict[0]
-
-    # print('Predicted license plate')
-    # print(plate_string)
