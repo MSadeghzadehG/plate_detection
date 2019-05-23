@@ -22,7 +22,7 @@ def binarization(input_image):
     return input_image > threshold_value
 
 
-car_image = imread("2670.jpg", as_grey=True)
+car_image = imread("2510.jpg", as_grey=True)
 gray_car_image = rotate_image(car_image * 255)
 binary_car_image = binarization(gray_car_image)
 print(car_image.shape)
@@ -76,12 +76,13 @@ for region in regionprops(label_image):
 plt.show()
 
 
-import pickle
-print("Loading model")
-filename = './finalized_model.sav'
-model = pickle.load(open(filename, 'rb'))
+# import pickle
+# print("Loading model")
+# filename = './finalized_model.sav'
+# model = pickle.load(open(filename, 'rb'))
 
 for plate in plate_like_objects:
+    prediction = ''
     characters = []
     binary_plate = binarization(plate)
     license_plate = np.invert(binary_plate)
@@ -89,6 +90,7 @@ for plate in plate_like_objects:
 
     cv_image = img_as_ubyte(license_plate)
     img = cv_image
+    img = cv2.cvtColor(img,cv2.COLOR_GRAY2RGB)
 
     # find contours
     ctrs, hier = cv2.findContours(cv_image.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -103,42 +105,44 @@ for plate in plate_like_objects:
         if w > 40 or h > 40 or h < 20:
             continue
         # Getting ROI
-        roi = img[max(y-5, 0):y+h+5, max(0, x-5):x+w+5].copy()
+        roi = img[max(y-5, 0):y+h+5, max(0, x-5):x+w+5,0]
 
         # show ROI
         characters.append(cv2.resize(roi, (28, 28), interpolation=cv2.INTER_AREA))
         
-
         # usning TFKpredict
-        x = characters[-1].reshape(1, 784).astype('float32') / 255
-
-        # perform the prediction
-        from keras.models import load_model
-        model = load_model('TFKeras.h5')
-        out = model.predict(x)
-        print(np.argmax(out))
+        # x = characters[-1].reshape(1, 784).astype('float32') / 255
+        # from keras.models import load_model
+        # model = load_model('TFKeras.h5')
+        # out = model.predict(x)
+        # print(np.argmax(out))
         
-
+        # using cnnPrecict
         # x = characters[-1].reshape(1,28,28,1)
         # x = x.astype('float32')
         # x /= 255
-
-        # #perform the prediction
         # from keras.models import load_model
         # model = load_model('cnn.h5')
         # out = model.predict(x)
         # print(np.argmax(out))
+        
+        # using my model
+        char = characters[-1].reshape(1, 28, 28, 1)
+        char = char.astype('float32')
+        char /= 255
+        from keras.models import load_model
+        model = load_model('my_model.h5')
+        out = model.predict(char)
+        print(out)
+        prediction += str(np.argmax(out))
 
-        cv2.imshow('charachter'+str(i), characters[-1])
+        cv2.rectangle(img, (x, y), (x+w, y+h), (0, 255, 0), 1)
+        cv2.imshow('charachter'+str(i), img)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
-        # cv2.imwrite('charachter'+str(i)+'.png', characters[-1])
-        # cv2.rectangle(img, (x, y), (x + w, y + h), (90, 0, 255), 2)
 
     print('found')
-    cv2.imshow('marked areas', img)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    cv2.imwrite(prediction+'.png', img)
 
 
 
