@@ -110,24 +110,24 @@ for plate in plate_like_objects:
         
 
         # usning TFKpredict
-        # x = characters[-1].reshape(1, 784).astype('float32') / 255
+        x = characters[-1].reshape(1, 784).astype('float32') / 255
 
-        # # perform the prediction
-        # from keras.models import load_model
-        # model = load_model('TFKeras.h5')
-        # out = model.predict(x)
-        # print(np.argmax(out))
-        
-
-        x = characters[-1].reshape(1,28,28,1)
-        x = x.astype('float32')
-        x /= 255
-
-        #perform the prediction
+        # perform the prediction
         from keras.models import load_model
-        model = load_model('cnn.h5')
+        model = load_model('TFKeras.h5')
         out = model.predict(x)
         print(np.argmax(out))
+        
+
+        # x = characters[-1].reshape(1,28,28,1)
+        # x = x.astype('float32')
+        # x /= 255
+
+        # #perform the prediction
+        # from keras.models import load_model
+        # model = load_model('cnn.h5')
+        # out = model.predict(x)
+        # print(np.argmax(out))
 
         cv2.imshow('charachter'+str(i), characters[-1])
         cv2.waitKey(0)
